@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Word Hunt Grid</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      padding: 20px;
+      background-color: #f8f8f8;
+    }
+    h1 {
+      margin-bottom: 20px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 60px);
+      grid-gap: 10px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .grid input {
+      width: 60px;
+      height: 60px;
+      text-transform: uppercase;
+      font-size: 24px;
+      text-align: center;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    #output {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>Word Hunt Board</h1>
+  <form id="grid-form">
+    <div class="grid">
+      <!-- 16 inputs -->
+      <input maxlength="1" name="cell" />
+      <input maxlength="1" name="cell" />
+      <input maxlength="1" name="cell" />
+      <input maxlength="1" name="cell" />
+      <input maxlength="1" name="cell" />
+      <input maxlength="1" name="cell" />
+      <input maxlength="1" name="cell" />
+      <input maxlength="1" name="cell" />
+      <input maxlength="1" name="cell" />
+      <input maxlength="1" name="cell" />
+      <input maxlength="1" name="cell" />
+      <input maxlength="1" name="cell" />
+      <input maxlength="1" name="cell" />
+      <input maxlength="1" name="cell" />
+      <input maxlength="1" name="cell" />
+      <input maxlength="1" name="cell" />
+    </div>
+    <button type="submit">Submit Board</button>
+  </form>
+  <div id="output"></div>
+
+  <script>
+    const form = document.getElementById("grid-form");
+    const output = document.getElementById("output");
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      const letters = Array.from(document.getElementsByName("cell"))
+        .map((input) => input.value.trim().toLowerCase())
+        .filter((val) => val);
+
+      if (letters.length !== 16) {
+        output.textContent = "Please fill all 16 letters.";
+        output.style.color = "red";
+        return;
+      }
+
+      const board = [];
+      for (let i = 0; i < 16; i += 4) {
+        board.push(letters.slice(i, i + 4));
+      }
+
+      // 🔁 Replace this URL with your backend URL once deployed
+      fetch("https://wordhuntgrade.onrender.com/api/score", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ board }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.error) {
+            output.innerHTML = `<span style='color:red;'>Error: ${data.error}</span>`;
+          } else {
+            output.style.color = "black";
+           output.innerHTML = `
+  <div>✅ <strong>Max Score:</strong> ${data.max_score}</div>
+  <div><strong>Words Found:</strong> ${data.word_count}</div>
+  <div><strong>Top Words:</strong><br>
+    ${data.words.slice(0, 10).map(([w, s]) => `${w} (${s})`).join('<br>')}
+  </div>
+  <br>
+  <label for="your-score">Enter Your Score:</label><br>
+  <input type="number" id="your-score" placeholder="e.g. 92500" style="padding: 5px; font-size: 16px; width: 150px;" />
+  <button id="calc-btn" style="padding: 6px 12px; font-size: 16px; margin-top: 8px;">Calculate %</button>
+  <div id="percent-result" style="margin-top: 10px;"></div>
+`;
+document.getElementById("calc-btn").addEventListener("click", () => {
+  const yourScore = parseInt(document.getElementById("your-score").value);
+  const maxScore = data.max_score;
+  const percentResult = document.getElementById("percent-result");
+
+  if (isNaN(yourScore)) {
+    percentResult.innerHTML = "<span style='color:red;'>Please enter a valid score.</span>";
+    return;
+  }
+
+  const pct = ((yourScore / maxScore) * 100).toFixed(2);
+  percentResult.innerHTML = `✅ Your Score: <strong>${yourScore}</strong> / ${maxScore} (${pct}%)`;
+});
+
+
+          }
+        })
+        .catch((err) => {
+          output.innerHTML = `<span style='color:red;'>❌ Failed to contact server</span>`;
+          console.error(err);
+        });
+    });
+  </script>
+</body>
+</html>
